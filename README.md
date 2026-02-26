@@ -1,5 +1,5 @@
 # Social Worlds
-*Visualization code and starter data for exploring social connections in captioned image corpora.*
+*Visualization code and starter data for exploring connections and rebuilding "social worlds" in captioned image corpora.*
 
 <p align="left">
   <a href="https://doi.org/10.1109/MCG.2026.3660122">
