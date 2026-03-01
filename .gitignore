@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Packaging / build
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# OS/editor
+.DS_Store
+
+# Generated artifacts and local data
+*.pdf
+*.json
+*.csv
+*.xlsx
+english/
+french/
+viet/
+web_low_res/

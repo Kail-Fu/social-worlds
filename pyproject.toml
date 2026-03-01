@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "social-worlds"
+version = "0.1.0"
+description = "Tools for building social-world visualizations from captioned image corpora."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Social Worlds authors" }
+]
+dependencies = [
+  "fastcluster>=1.2.6",
+  "matplotlib>=3.5",
+  "numpy>=1.22",
+  "openpyxl>=3.0",
+  "pandas>=1.4",
+  "Pillow>=9.0",
+  "pygraphviz>=1.9",
+  "scikit-learn>=1.0",
+  "scipy>=1.8",
+  "sentence-transformers>=2.2.2"
+]
+
+[project.urls]
+Homepage = "https://github.com/Kail-Fu/social-worlds"
+Paper = "https://doi.org/10.1109/MCG.2026.3660122"
+
+[project.scripts]
+sw-similarity = "social_worlds.similarity_gen:main"
+sw-reorder = "social_worlds.matrix_reorder:main"
+sw-enrich = "social_worlds.ordered_sheet_modification:main"
+sw-mst = "social_worlds.mst_off_csv:main"
+sw-cluster = "social_worlds.clustering:main"
+sw-radial = "social_worlds.radial_json_generator:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
