@@ -85,6 +85,11 @@ sw-radial \
 
 Upload `radial.json` to [this Observable notebook](https://observablehq.com/d/c7cbeabbeffbc1c2) to view the radial tree.
 
+## Additional Visualization Method
+The paper also includes a PixPlot-based visualization workflow.
+
+- PixPlot repository: [pleonard212/pix-plot](https://github.com/pleonard212/pix-plot)
+
 ## Make Targets
 After installation, the same pipeline is available via:
 
