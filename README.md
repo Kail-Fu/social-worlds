@@ -8,6 +8,9 @@
   <a href="https://osf.io/zpr8c/overview">
     <img src="https://img.shields.io/badge/Dataset-OSF-blue?style=plastic&logo=Open%20Access&logoColor=blue" alt="Dataset OSF">
   </a>
+  <a href="https://youtu.be/CKkZ1sL8y68">
+    <img src="https://img.shields.io/badge/Video-YouTube-FF0000?style=plastic&logo=youtube&logoColor=white" alt="YouTube video">
+  </a>
   <img src="https://img.shields.io/badge/Code-Coming%20Soon-lightgrey?style=plastic" alt="Code coming soon">
 </p>
 
@@ -49,6 +52,12 @@ A detailed schema and examples are coming soon.
 
 ## Reproducing the paper figures
 Coming soon. Target outputs will mirror the paper’s visualization set (distance matrix, MST, t-SNE/UMAP, PixPlot projection).
+
+---
+
+## Video
+- IEEE CG&A talk: [Visual Exploration of a Historical Vietnamese Corpus of Captioned Drawings: A Case Study](https://youtu.be/CKkZ1sL8y68)
+- Channel: IEEE Computer Society
 
 ---
 
