@@ -48,11 +48,16 @@ Set your sheet path once:
 
 ```bash
 SHEET_PATH="/absolute/path/to/Final_Compiled_Captions.xlsx"
+COLOR_COL="9a. Gender: Gendered based on Captions"
 ```
 
 1. Generate similarity matrices:
 ```bash
-sw-similarity --sheet "$SHEET_PATH" --sheet-tab Sheet1 --output-dir .
+sw-similarity \
+  --sheet "$SHEET_PATH" \
+  --sheet-tab Sheet1 \
+  --output-dir . \
+  --embedding-metadata-cols "$COLOR_COL"
 ```
 
 2. Generate t-SNE coordinates from embedding matrix:
@@ -61,7 +66,9 @@ sw-dr \
   --input english/english_mpnet_embedding_matrix.csv \
   --method tsne \
   --output english/tsne_coords.csv \
-  --plot english/tsne_projection.pdf
+  --plot english/tsne_projection.pdf \
+  --annotate \
+  --color-col "$COLOR_COL"
 ```
 
 3. Reorder matrices:
@@ -99,7 +106,7 @@ The paper uses both t-SNE and UMAP. `sw-dr` supports both methods and writes 2D 
 
 Input contract for `sw-dr`:
 - CSV with an `id` column and a `label` column
-- Embedding feature columns beginning at `--feature-start-col` (default `2`)
+- Embedding feature columns beginning at `--feature-start-col` (auto-detected from `feat_` by default)
 - Optional categorical column for colors via `--color-col`
 
 By default, `sw-similarity` now writes embedding matrix files compatible with `sw-dr`:
@@ -107,9 +114,42 @@ By default, `sw-similarity` now writes embedding matrix files compatible with `s
 - `french/french_mpnet_embedding_matrix.csv`
 - `viet/viet_sbert_embedding_matrix.csv`
 
+To color points by a label/group column (for example gender), include that column during embedding export:
+```bash
+sw-similarity --sheet "$SHEET_PATH" --output-dir . --embedding-metadata-cols "$COLOR_COL"
+```
+For your current workbook, use:
+```bash
+COLOR_COL="9a. Gender: Gendered based on Captions"
+```
+If your sheet changes, replace with the exact header.
+To inspect available sheet headers:
+```bash
+python3 - <<'PY'
+import pandas as pd
+import os
+sheet = os.environ["SHEET_PATH"]
+print(pd.read_excel(sheet, sheet_name="Sheet1", nrows=1).columns.tolist())
+PY
+```
+
 t-SNE example:
 ```bash
-sw-dr --input english/english_mpnet_embedding_matrix.csv --method tsne --output english/tsne_coords.csv
+sw-dr --input english/english_mpnet_embedding_matrix.csv --method tsne --output english/tsne_coords.csv --annotate --color-col "$COLOR_COL"
+```
+
+Paper-style dense-label example (cleaner large canvas):
+```bash
+sw-dr \
+  --input english/english_mpnet_embedding_matrix.csv \
+  --method tsne \
+  --output english/tsne_coords.csv \
+  --plot english/tsne_projection.pdf \
+  --annotate \
+  --color-col "$COLOR_COL" \
+  --fig-width 100 --fig-height 100 --dpi 200 \
+  --point-size 100 --label-fontsize 3 \
+  --max-annotations 0
 ```
 
 UMAP example:

@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
@@ -43,8 +44,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--feature-start-col",
         type=int,
-        default=2,
-        help="0-based index where embedding feature columns begin (default: 2).",
+        default=-1,
+        help="0-based index where embedding feature columns begin; use -1 to auto-detect 'feat_' columns (default).",
     )
     parser.add_argument(
         "--standardize",
@@ -66,6 +67,17 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Annotate points with label text in the static plot.",
     )
+    parser.add_argument(
+        "--max-annotations",
+        type=int,
+        default=0,
+        help="Maximum number of annotations to draw (0 means annotate all selected points).",
+    )
+    parser.add_argument("--point-size", type=float, default=15.0, help="Scatter point size (default: 15).")
+    parser.add_argument("--label-fontsize", type=float, default=4.0, help="Annotation font size (default: 4).")
+    parser.add_argument("--fig-width", type=float, default=14.0, help="Plot width in inches (default: 14).")
+    parser.add_argument("--fig-height", type=float, default=10.0, help="Plot height in inches (default: 10).")
+    parser.add_argument("--dpi", type=int, default=200, help="Plot DPI (default: 200).")
 
     # t-SNE params
     parser.add_argument("--perplexity", type=float, default=30.0, help="t-SNE perplexity.")
@@ -88,7 +100,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def build_color_map(series: pd.Series) -> list[str]:
+def build_color_map(series: pd.Series) -> tuple[list[str], dict[str, str]]:
+    def canonical(value: str) -> str:
+        return value.strip().lower()
+
+    special_map = {
+        "female": "#d62728",
+        "male": "#1f77b4",
+        "mixed": "#2ca02c",
+        "neutral": "#2ca02c",
+        "nuetral": "#2ca02c",
+        "na": "#2ca02c",
+        "n/a": "#2ca02c",
+        "mixed/neutral/na": "#2ca02c",
+        "mixed/nuetral/na": "#2ca02c",
+    }
+
     palette = [
         "#1f77b4",
         "#ff7f0e",
@@ -101,9 +128,18 @@ def build_color_map(series: pd.Series) -> list[str]:
         "#bcbd22",
         "#17becf",
     ]
-    categories = list(dict.fromkeys(series.fillna("unknown").astype(str).tolist()))
-    category_to_color = {cat: palette[i % len(palette)] for i, cat in enumerate(categories)}
-    return [category_to_color[value] for value in series.fillna("unknown").astype(str).tolist()]
+    raw_values = series.fillna("unknown").astype(str).tolist()
+    categories = list(dict.fromkeys(raw_values))
+    category_to_color = {}
+    next_palette_idx = 0
+    for cat in categories:
+        key = canonical(cat)
+        if key in special_map:
+            category_to_color[cat] = special_map[key]
+        else:
+            category_to_color[cat] = palette[next_palette_idx % len(palette)]
+            next_palette_idx += 1
+    return [category_to_color[value] for value in raw_values], category_to_color
 
 
 def run_tsne(features, args: argparse.Namespace):
@@ -136,22 +172,38 @@ def run_umap(features, args: argparse.Namespace):
     return model.fit_transform(features)
 
 
-def maybe_plot(coords, labels: pd.Series, colors: list[str], args: argparse.Namespace) -> None:
+def maybe_plot(
+    coords,
+    labels: pd.Series,
+    colors: list[str],
+    category_to_color: dict[str, str] | None,
+    args: argparse.Namespace,
+) -> None:
     if not args.plot:
         return
 
     plot_path = Path(args.plot)
     plot_path.parent.mkdir(parents=True, exist_ok=True)
 
-    plt.figure(figsize=(14, 10), dpi=200)
-    plt.scatter(coords[:, 0], coords[:, 1], c=colors, s=15)
+    plt.figure(figsize=(args.fig_width, args.fig_height), dpi=args.dpi)
+    plt.scatter(coords[:, 0], coords[:, 1], c=colors, s=args.point_size)
     plt.gca().set_aspect("equal", "datalim")
 
     if args.annotate:
-        for idx, text in enumerate(labels.astype(str).tolist()):
-            plt.annotate(text, (coords[:, 0][idx], coords[:, 1][idx]), fontsize=4)
+        label_values = labels.astype(str).tolist()
+        indices = list(range(len(label_values)))
+        if args.max_annotations > 0:
+            indices = indices[: args.max_annotations]
+        for idx in indices:
+            plt.annotate(label_values[idx], (coords[:, 0][idx], coords[:, 1][idx]), fontsize=args.label_fontsize)
 
     plt.title(f"{args.method.upper()} projection")
+    if category_to_color:
+        handles = [
+            plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=8, label=cat)
+            for cat, color in category_to_color.items()
+        ]
+        plt.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 1.02), ncol=3, frameon=False)
     plt.savefig(plot_path, format=plot_path.suffix.lstrip(".") or "pdf")
 
 
@@ -167,11 +219,25 @@ def main() -> None:
     if missing:
         raise ValueError(f"Required columns missing from input CSV: {missing}")
 
-    features = dataframe.iloc[:, args.feature_start_col :].apply(pd.to_numeric, errors="coerce").fillna(0.0)
+    feature_start_col = args.feature_start_col
+    if feature_start_col < 0:
+        feature_columns = [col for col in dataframe.columns if str(col).startswith("feat_")]
+        if feature_columns:
+            features = dataframe[feature_columns].apply(pd.to_numeric, errors="coerce").fillna(0.0)
+        else:
+            feature_start_col = 2
+            features = dataframe.iloc[:, feature_start_col:].apply(pd.to_numeric, errors="coerce").fillna(0.0)
+    else:
+        features = dataframe.iloc[:, feature_start_col:].apply(pd.to_numeric, errors="coerce").fillna(0.0)
     if features.shape[1] == 0:
         raise ValueError("No feature columns found. Check --feature-start-col and input format.")
 
-    matrix = features.to_numpy()
+    matrix = features.to_numpy(dtype=np.float64)
+    matrix = np.nan_to_num(matrix, nan=0.0, posinf=0.0, neginf=0.0)
+    non_constant_cols = np.std(matrix, axis=0) > 0
+    if non_constant_cols.any():
+        matrix = matrix[:, non_constant_cols]
+
     if args.standardize:
         matrix = StandardScaler().fit_transform(matrix)
 
@@ -182,9 +248,10 @@ def main() -> None:
 
     if args.color_col and args.color_col in dataframe.columns:
         color_values = dataframe[args.color_col].astype(str)
-        colors = build_color_map(color_values)
+        colors, category_to_color = build_color_map(color_values)
     else:
         colors = ["#1f77b4"] * len(dataframe)
+        category_to_color = None
 
     result_df = pd.DataFrame(
         {
@@ -205,7 +272,7 @@ def main() -> None:
         with json_path.open("w", encoding="utf-8") as fp:
             json.dump(result_df.to_dict(orient="records"), fp)
 
-    maybe_plot(coords, result_df["label"], colors, args)
+    maybe_plot(coords, result_df["label"], colors, category_to_color, args)
 
 
 if __name__ == "__main__":
