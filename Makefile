@@ -5,11 +5,15 @@ TAB ?= Sheet1
 BASE_DIR ?= .
 IMAGES_DIR ?= web_low_res
 RADIAL_KEYWORD ?= A praying monk (earthenware toy).
+DR_INPUT ?= english/english_mpnet_embedding_matrix.csv
+DR_OUTPUT ?= english/tsne_coords.csv
+DR_METHOD ?= tsne
+DR_PLOT ?= english/tsne_projection.pdf
 
-.PHONY: setup similarity reorder enrich mst cluster radial pipeline
+.PHONY: setup similarity reorder enrich mst cluster radial dr pipeline
 
 setup:
-	python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -e .
+	python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -e ".[dr]"
 
 similarity:
 	@test -n "$(SHEET)" || (echo "SHEET is required" && exit 1)
@@ -31,4 +35,7 @@ cluster:
 radial:
 	sw-radial --input english/english_4454.csv --keyword "$(RADIAL_KEYWORD)" --output radial.json
 
-pipeline: similarity reorder enrich mst cluster radial
+dr:
+	sw-dr --input "$(DR_INPUT)" --method "$(DR_METHOD)" --output "$(DR_OUTPUT)" --plot "$(DR_PLOT)"
+
+pipeline: similarity dr reorder enrich mst cluster radial

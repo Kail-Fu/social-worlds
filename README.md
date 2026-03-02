@@ -22,7 +22,7 @@ This repository open-sources tools used to generate visualizations in *Visual Ex
 ## Package Layout
 - Source package: `src/social_worlds/`
 - Build config: `pyproject.toml`
-- CLI pipeline commands: `sw-similarity`, `sw-reorder`, `sw-enrich`, `sw-mst`, `sw-cluster`, `sw-radial`
+- CLI pipeline commands: `sw-similarity`, `sw-dr`, `sw-reorder`, `sw-enrich`, `sw-mst`, `sw-cluster`, `sw-radial`
 
 ## Requirements
 - Python 3.9+
@@ -33,7 +33,7 @@ This repository open-sources tools used to generate visualizations in *Visual Ex
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -e .
+pip install -e ".[dr]"
 ```
 
 ## Data Inputs
@@ -55,27 +55,36 @@ SHEET_PATH="/absolute/path/to/Final_Compiled_Captions.xlsx"
 sw-similarity --sheet "$SHEET_PATH" --sheet-tab Sheet1 --output-dir .
 ```
 
-2. Reorder matrices:
+2. Generate t-SNE coordinates from embedding matrix:
+```bash
+sw-dr \
+  --input english/english_mpnet_embedding_matrix.csv \
+  --method tsne \
+  --output english/tsne_coords.csv \
+  --plot english/tsne_projection.pdf
+```
+
+3. Reorder matrices:
 ```bash
 sw-reorder --base-dir . --method average
 ```
 
-3. Attach multilingual metadata and image links:
+4. Attach multilingual metadata and image links:
 ```bash
 sw-enrich --sheet "$SHEET_PATH" --sheet-tab Sheet1 --base-dir .
 ```
 
-4. Render MST (English default):
+5. Render MST (English default):
 ```bash
 sw-mst --input english/english_4454.csv --images-dir web_low_res --output english/english_mst.pdf
 ```
 
-5. Generate hierarchical clustering dendrogram:
+6. Generate hierarchical clustering dendrogram:
 ```bash
 sw-cluster --input english/english_4454.csv --output english/hierarchical_clustering.pdf
 ```
 
-6. Generate radial JSON:
+7. Generate radial JSON:
 ```bash
 sw-radial \
   --input english/english_4454.csv \
@@ -84,6 +93,29 @@ sw-radial \
 ```
 
 Upload `radial.json` to [this Observable notebook](https://observablehq.com/d/c7cbeabbeffbc1c2) to view the radial tree.
+
+## Dimension Reduction
+The paper uses both t-SNE and UMAP. `sw-dr` supports both methods and writes 2D coordinates to CSV (and optional JSON/plot output).
+
+Input contract for `sw-dr`:
+- CSV with an `id` column and a `label` column
+- Embedding feature columns beginning at `--feature-start-col` (default `2`)
+- Optional categorical column for colors via `--color-col`
+
+By default, `sw-similarity` now writes embedding matrix files compatible with `sw-dr`:
+- `english/english_mpnet_embedding_matrix.csv`
+- `french/french_mpnet_embedding_matrix.csv`
+- `viet/viet_sbert_embedding_matrix.csv`
+
+t-SNE example:
+```bash
+sw-dr --input english/english_mpnet_embedding_matrix.csv --method tsne --output english/tsne_coords.csv
+```
+
+UMAP example:
+```bash
+sw-dr --input english/english_mpnet_embedding_matrix.csv --method umap --output english/umap_coords.csv --standardize
+```
 
 ## Additional Visualization Method
 The paper also includes a PixPlot-based visualization workflow.
@@ -100,6 +132,7 @@ make enrich SHEET="$SHEET_PATH"
 make mst
 make cluster
 make radial
+make dr
 ```
 
 Or run everything:
