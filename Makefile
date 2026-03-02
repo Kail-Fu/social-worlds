@@ -9,8 +9,11 @@ DR_INPUT ?= english/english_mpnet_embedding_matrix.csv
 DR_OUTPUT ?= english/tsne_coords.csv
 DR_METHOD ?= tsne
 DR_PLOT ?= english/tsne_projection.pdf
+PIX_METADATA_OUTPUT ?= pixplot/metadata.csv
+PIX_LAYOUT_OUTPUT ?= pixplot/layout.json
+PIX_MANIFEST_OUTPUT ?= pixplot/manifest.txt
 
-.PHONY: setup similarity reorder enrich mst cluster radial dr pipeline
+.PHONY: setup similarity reorder enrich mst cluster radial dr pixplot-export pipeline
 
 setup:
 	python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip && pip install -e ".[dr]"
@@ -38,4 +41,7 @@ radial:
 dr:
 	sw-dr --input "$(DR_INPUT)" --method "$(DR_METHOD)" --output "$(DR_OUTPUT)" --plot "$(DR_PLOT)"
 
-pipeline: similarity dr reorder enrich mst cluster radial
+pixplot-export:
+	sw-pixplot-export --dr-input "$(DR_OUTPUT)" --metadata-output "$(PIX_METADATA_OUTPUT)" --layout-output "$(PIX_LAYOUT_OUTPUT)" --manifest-output "$(PIX_MANIFEST_OUTPUT)" --image-dir "$(IMAGES_DIR)"
+
+pipeline: similarity dr reorder enrich mst cluster radial pixplot-export

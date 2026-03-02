@@ -22,7 +22,7 @@ This repository open-sources tools used to generate visualizations in *Visual Ex
 ## Package Layout
 - Source package: `src/social_worlds/`
 - Build config: `pyproject.toml`
-- CLI pipeline commands: `sw-similarity`, `sw-dr`, `sw-reorder`, `sw-enrich`, `sw-mst`, `sw-cluster`, `sw-radial`
+- CLI pipeline commands: `sw-similarity`, `sw-dr`, `sw-pixplot-export`, `sw-reorder`, `sw-enrich`, `sw-mst`, `sw-cluster`, `sw-radial`
 
 ## Requirements
 - Python 3.9+
@@ -122,6 +122,21 @@ The paper also includes a PixPlot-based visualization workflow.
 
 - PixPlot repository: [pleonard212/pix-plot](https://github.com/pleonard212/pix-plot)
 
+Export `sw-dr` output to PixPlot-ready files:
+```bash
+sw-pixplot-export \
+  --dr-input english/tsne_coords.csv \
+  --metadata-output pixplot/metadata.csv \
+  --layout-output pixplot/layout.json \
+  --manifest-output pixplot/manifest.txt \
+  --image-dir web_low_res
+```
+
+This produces:
+- `pixplot/metadata.csv` with `filename`, `label`, `category`, `description`, `x`, `y`
+- `pixplot/layout.json` as `[[x, y], ...]`
+- `pixplot/manifest.txt` image list for PixPlot `--images`
+
 ## Make Targets
 After installation, the same pipeline is available via:
 
@@ -133,6 +148,7 @@ make mst
 make cluster
 make radial
 make dr
+make pixplot-export
 ```
 
 Or run everything:

@@ -42,6 +42,7 @@ sw-mst = "social_worlds.mst_off_csv:main"
 sw-cluster = "social_worlds.clustering:main"
 sw-radial = "social_worlds.radial_json_generator:main"
 sw-dr = "social_worlds.dimension_reduction:main"
+sw-pixplot-export = "social_worlds.pixplot_export:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
